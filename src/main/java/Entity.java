@@ -1,14 +1,21 @@
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.security.SecureRandom;
+import com.google.common.math.BigIntegerMath;
 
 public class Entity {
     private BigInteger d,p,q;
     public BigInteger n,e;
+    public Entity(){}
 
-    public Entity() {
+    public Entity(boolean isAttack) {
         SecureRandom random=new SecureRandom();
-        p=BigInteger.probablePrime(512,random);
         q=BigInteger.probablePrime(512,random);
+        //p should be q < p < 2q
+        do{
+            p=BigInteger.probablePrime(512,random);
+        }while(p.compareTo(q)<=0 || p.compareTo(q.multiply(BigInteger.TWO))>=0);
+
         n=p.multiply(q);
 
         //Compute φ = (p − 1)(q − 1)
@@ -20,12 +27,35 @@ public class Entity {
         }while(!e.gcd(phi).equals(BigInteger.ONE) || e.compareTo(phi)>=0); // gcd(e, φ) must be 1*/
 
         //Choose a random e with max 32 bits
-        do{
-            e=new BigInteger(32,random);
-        }while(!e.gcd(phi).equals(BigInteger.ONE)); // gcd(e, φ) must be 1
+        if(!isAttack){
+            do{
+                e=new BigInteger(32,random);
+            }while(!e.gcd(phi).equals(BigInteger.ONE)); // gcd(e, φ) must be 1
+            d = e.modInverse(phi); //private key
+            printBigInteger(d,"d");
+        }
+
+        else{
+            BigInteger calculate;
+            calculate = ((BigIntegerMath.sqrt(BigIntegerMath.sqrt(n,RoundingMode.FLOOR),RoundingMode.FLOOR))).divide(BigInteger.valueOf(3));
+
+            //d should be less than pow(n,1/4)/3
+            boolean eFound;
+            do{
+                d=new BigInteger(BigIntegerMath.log2(calculate,RoundingMode.FLOOR)-1,random);
+                if(d.gcd(phi).equals(BigInteger.ONE)){
+                    e = d.modInverse(phi);
+                    eFound=true;
+                }
+                else
+                    eFound=false;
+            }while(!d.gcd(phi).equals(BigInteger.ONE) ||(eFound &&!(e.gcd(phi).equals(BigInteger.ONE))||d.compareTo(calculate)>=0));
+            printBigInteger(d,"d");
+
+        }
+
 
         // ed ≡ 1 (mod φ).
-        d = e.modInverse(phi); //private key
     }
     public BigInteger encrypt(BigInteger plainText,BigInteger exponent,BigInteger modulus){
         return plainText.modPow(exponent,modulus);

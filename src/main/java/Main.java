@@ -3,9 +3,10 @@ import java.math.BigInteger;
 public class Main {
 
     public static void main(String[] args) {
-        Entity A=new Entity();
+        Entity A=new Entity(false);
         Entity B=new Entity();
         String s = "RSA";
+
         //Convert the plaintext to integer between 0 and n
         BigInteger text=Main.convertStringToInteger(s);
         Entity.printBigInteger(text,"text");
@@ -16,7 +17,9 @@ public class Main {
         System.out.println("Decrypted text is: "+convertIntegerToString(decryptedText1));
         BigInteger decryptedText2=A.decryptWithChineseTheorem(cipherText);
         System.out.println("Decrypted text is: "+convertIntegerToString(decryptedText2));
-        //Entity.printBigInteger(A.decrypt(cipherText),"Decrypted ciphertext");
+
+        Attack Wiener=new Attack(A.n,A.e,cipherText);
+        Wiener.start();
 
 
     }
